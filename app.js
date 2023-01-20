@@ -4,7 +4,16 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const ld = require("lodash");
-let posts = [];
+const mongoose = require("mongoose");
+
+mongoose.connect("mongodb://127.0.0.1:27017/journalDB");
+
+const journalSchema = new mongoose.Schema({
+  title: String,
+  body: String
+});
+
+const Journal = mongoose.model("Journal", journalSchema);
 
 const homeStartingContent = "Daily journaling is an important habit to instill in our daily routine. It can help you achieve your goals through keeping better track of your intentions and help you stay accountable of your actions. Writing your thoughts down also strengthens your memory and essentially lets your brain know that you want to remember what you wrote down. It also obviously improves your writing and communication skills because you'll consistently be writing down your thoughts and emotions into proper sentences.";
 const aboutContent = "I have been on a self-improvement journey as of recently and one of the most beneficial habits that successful individuals have is journaling. As a software developer, I have put my own twist to it and made a whole website for it so that I can keep track of my thought, goals and emotions and be able to use this information to better myself. Come and join me on this self-improvement journey and let's succeed together!";
@@ -18,7 +27,17 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
 app.get("/",(req,res) =>{
-  res.render("home",{content : homeStartingContent, posts : posts});
+  //returns all journal entries in db
+  Journal.find((err,result) =>{
+    var posts = result;
+    if(err){
+        console.log(err);
+    }
+    else{
+        //sends variables to list.ejs
+        res.render("home",{content : homeStartingContent, posts : posts});
+    }
+});
   
 });
 
@@ -30,12 +49,14 @@ app.get("/contact", (req,res) =>{
   res.render("contact",{contact: contactContent});
 });
 
-app.get("/posts/:post", (req,res) =>{
-  //iterates through posts array
-  posts.forEach((post) =>{
-    //checks if element in posts array includes route param
-    if(ld.lowerCase(post.title) === ld.lowerCase(req.params.post)){
-      res.render("post",{title:post.title, body:post.body});
+app.get("/posts/:postID", (req,res) =>{
+  //finds journal entry by id
+  Journal.findById(req.params.postID, (err,result) => {
+    if(err){
+      console.log(err);
+    }
+    else{
+      res.render("post",{title: result.title, body: result.body});
     }
   });
 
@@ -46,12 +67,12 @@ app.get("/compose", (req,res) =>{
 });
 
 app.post("/compose", (req,res) =>{
-  const post = {
+  const post = new Journal({
     title: req.body.postTitle,
     body: req.body.postBody
-  };
+  });
 
-  posts.push(post);
+  post.save();
   res.redirect("/");
 });
 
