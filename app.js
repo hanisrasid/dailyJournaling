@@ -6,8 +6,11 @@ const ejs = require("ejs");
 const ld = require("lodash");
 const mongoose = require("mongoose");
 
+//connect to mongodb database
 mongoose.connect("mongodb://127.0.0.1:27017/journalDB");
 
+
+// create a schema which outlines the structure of data to be stored
 const journalSchema = new mongoose.Schema({
   title: String,
   body: String
